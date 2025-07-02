@@ -37,10 +37,10 @@ echo "API_SECRET_KEY=hackathon-secret-key" >> .env
 ```
 
 ## API Keys
--   `OPENWEATHER_API_KEY`: Obtained from [OpenWeather](https://openweathermap.org/api).[^1] This key is used by the server to fetch real-time data.
--   `API_SECRET_KEY`: This is a secret key of your own choosing, used to protect your server's API endpoints.
+-   `OPENWEATHER_API_KEY`: Obtained from [OpenWeather](https://openweathermap.org/api).[^1] This key is used by the server to fetch real-time data. You can add a dummy key or no key altogether if you only need the synthetic data. 
+-   `API_SECRET_KEY`: This is a secret key of your own choosing, used to protect the server's API endpoints in deployment.
 
-[^1]: It takes a few hours to get the free API key activated, feel free to contact me if you need assistance when setting it up `:)`.
+[^1]: It takes a few hours to get the free API key activated, feel free to contact me if you need assistance when setting it up `:)`
 
 ## Usage
 
