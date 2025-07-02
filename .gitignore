@@ -186,7 +186,6 @@ $RECYCLE.BIN/
 # Project specific
 aqi_data.db
 fake_aqi_data.txt
-*.png
 *.jpg
 *.jpeg
 *.gif

@@ -9,7 +9,7 @@ AQI (Air Quality Index) Flask Server using the OpenWeatherMap AIr Pollution API.
 - **Background Collection**: Automatic data collection for major cities
 
 > [!WARNING]  
-> If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic fake data**.
+> If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic synthetic data**.
 
 ## Installation
 
@@ -31,6 +31,7 @@ pip install -r requirements.txt
 
 4. Set up environment variables (create _.env_ file):
 ```bash
+cd src
 echo "OPENWEATHER_API_KEY=your_api_key_here" > .env
 ```
 
@@ -153,12 +154,13 @@ This will:
 ## Generated data
 __Current Pollutant Levels:__
 
-![pollutant_levels](figures/current_beijing.png)
+<img src="figures/current_beijing.png" alt="pollutant_levels" width="300"/>
+
 
 __AQI Forecast:__
 
-![forecast](figures/forecast_beijing.png)
+<img src="figures/forecast_beijing.png" alt="forecast" width="300"/>
 
 __Historical AQI Data:__
 
-![historical](figures/historical_beijing.png)
+<img src="figures/historical_beijing.png" alt="historical" width="300"/>
