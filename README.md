@@ -8,8 +8,8 @@ AQI (Air Quality Index) Flask Server using the OpenWeatherMap AIr Pollution API.
 - **Pollutant Monitoring**: Tracks PM2.5, PM10, CO, NO2, SO2, O3, and more
 - **Background Collection**: Automatic data collection for major cities
 
-[!IMPORTANT]
-If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic fake data**.
+> [!WARNING]  
+> If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic fake data**.
 
 ## Installation
 
