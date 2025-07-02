@@ -154,13 +154,13 @@ This will:
 ## Generated data
 __Current Pollutant Levels:__
 
-<img src="figures/current_beijing.png" alt="pollutant_levels" width="300"/>
+<img src="figures/current_beijing.png" alt="pollutant_levels" width="500"/>
 
 
 __AQI Forecast:__
 
-<img src="figures/forecast_beijing.png" alt="forecast" width="300"/>
+<img src="figures/forecast_beijing.png" alt="forecast" width="500"/>
 
 __Historical AQI Data:__
 
-<img src="figures/historical_beijing.png" alt="historical" width="300"/>
+<img src="figures/historical_beijing.png" alt="historical" width="500"/>
