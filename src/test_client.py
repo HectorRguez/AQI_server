@@ -44,28 +44,24 @@ class AQITestClient:
     def test_current_aqi(self):
         """Test current AQI endpoint for Beijing"""
         print("\n=== Testing Current AQI ===")
-
         test_cities = [(39.9042, 116.4074, "Beijing")]
-
         for lat, lon, city in test_cities:
             print(f"\n--- Testing {city} ---")
-            # The API key header is now sent automatically by the session
             response = self.session.get(
-                f"{self.base_url}/api/current",
-                params={"lat": lat, "lon": lon},
+                f"{self.base_url}/api/current", params={"lat": lat, "lon": lon}
             )
-
             if response.status_code == 200:
                 data = response.json()
+                # Print the data source
+                source = data.get("source", "Unknown")
+                print(f"✓ Data source: {source}")  # <-- Add this line
                 if data.get("list"):
                     aqi = data["list"][0]["main"]["aqi"]
                     pm25 = data["list"][0]["components"]["pm2_5"]
                     pm10 = data["list"][0]["components"]["pm10"]
-
                     print(f"✓ Current AQI: {aqi}")
                     print(f"  PM2.5: {pm25:.2f} μg/m³")
                     print(f"  PM10: {pm10:.2f} μg/m³")
-
                     self._plot_current_aqi(data, city)
             else:
                 print(f"✗ Error: {response.status_code} - {response.text}")
@@ -73,18 +69,17 @@ class AQITestClient:
     def test_forecast_aqi(self):
         """Test forecast AQI endpoint for Beijing"""
         print("\n=== Testing Forecast AQI ===")
-
         test_cities = [(39.9042, 116.4074, "Beijing")]
-
         for lat, lon, city in test_cities:
             print(f"\n--- Testing {city} Forecast ---")
             response = self.session.get(
-                f"{self.base_url}/api/forecast",
-                params={"lat": lat, "lon": lon},
+                f"{self.base_url}/api/forecast", params={"lat": lat, "lon": lon}
             )
-
             if response.status_code == 200:
                 data = response.json()
+                # Print the data source
+                source = data.get("source", "Unknown")
+                print(f"✓ Data source: {source}")  # <-- Add this line
                 if data.get("list"):
                     print(f"✓ Forecast data points: {len(data['list'])}")
                     next_24h = data["list"][:8]
@@ -108,35 +103,62 @@ class AQITestClient:
 
         for lat, lon, city in test_cities:
             print(f"\n--- Testing {city} Historical Data ---")
-            response = self.session.get(
+            resp = self.session.get(
                 f"{self.base_url}/api/historical",
                 params={
                     "lat": lat,
                     "lon": lon,
                     "start": start_date.date().isoformat(),
-                    "end": end_date.date().isoformat(),
+                    "end":   end_date.date().isoformat(),
                 },
             )
 
-            if response.status_code == 200:
-                data = response.json()
-                source = data.get("source", "unknown")
-                print(f"✓ Data source: {source}")
+            if resp.status_code != 200:
+                print(f"✗ Error: {resp.status_code} - {resp.text}")
+                continue
 
-                if "data" in data:
-                    if isinstance(data["data"], list) and data["data"]:
-                        print(f"  Data points: {len(data['data'])}")
-                        self._plot_historical_aqi(data["data"], city)
-                    elif (
-                        isinstance(data["data"], dict)
-                        and "list" in data["data"]
-                    ):
-                        print(f"  Data points: {len(data['data']['list'])}")
-                        self._plot_historical_api_format(data["data"], city)
-                    else:
-                        print("  No data points available")
+            data = resp.json()
+            source = data.get("source", "unknown")
+            print(f"✓ Data source: {source}")
+
+            # extract the raw records array (DB rows or API-format list)
+            records = data.get("list", [])
+
+            if not records:
+                print("  No data points available")
+                continue
+
+            print(f"  Data points: {len(records)}")
+
+            # If coming from Local Database, transform each row into API format
+            if source == "Local Database":
+                api_list = []
+                for row in records:
+                    api_list.append({
+                        "dt": row["timestamp"],
+                        "main": {"aqi": row["aqi"]},
+                        "components": {
+                            "pm2_5": row["pm2_5"],
+                            "pm10":  row["pm10"],
+                            "co":    row["co"],
+                            "no":    row["no"],
+                            "no2":   row["no2"],
+                            "o3":    row["o3"],
+                            "so2":   row["so2"],
+                            "nh3":   row["nh3"],
+                        }
+                    })
+                payload = {
+                    "coord": data.get("coord"),
+                    "list": api_list,
+                    "source": source
+                }
             else:
-                print(f"✗ Error: {response.status_code} - {response.text}")
+                # already in API format
+                payload = data
+
+            # Now call the same plot helper
+            self._plot_historical_api_format(payload, city)
 
     def _plot_current_aqi(self, data, city_name):
         """Simple plot for current AQI data"""

@@ -7,7 +7,6 @@ AQI (Air Quality Index) Flask Server using the OpenWeatherMap Air Pollution API.
 - **Historical Data Storage**: Automatically stores AQI data in SQLite database with 15-minute intervals
 - **Forecast Data**: 4-day air quality forecasts
 - **Pollutant Monitoring**: Tracks PM2.5, PM10, CO, NO2, SO2, O3, and more
-- **Background Collection**: Automatic data collection for major cities: Beijing, Shanghai, Tokyo, London and New York.
 
 > [!WARNING]  
 > If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic synthetic data**.
@@ -140,7 +139,8 @@ All endpoints return JSON data with the following structure:
         "aqi": 3
       }
     }
-  ]
+  ],
+  "source": "OpenWeatherMap API"
 }
 ```
 

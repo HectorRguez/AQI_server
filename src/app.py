@@ -46,15 +46,14 @@ os.makedirs(DATA_DIR, exist_ok=True)  # Create data directory if it doesn't exis
 
 DB_NAME = os.path.join(DATA_DIR, "aqi_data.db")
 FAKE_DATA_FILE = os.path.join(DATA_DIR, "fake_aqi_data.txt")
-UPDATE_INTERVAL = 900  # 15 minutes in seconds
-HISTORICAL_DAYS = 30  # Number of days of historical data to generate
+HISTORICAL_DAYS = 30  # Number of days of historical data
 
 # Database setup
 def init_db():
     """Initialize the SQLite database"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS aqi_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,6 +70,7 @@ def init_db():
             so2 REAL,
             nh3 REAL,
             location_name TEXT,
+            source TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -139,23 +139,24 @@ class FakeDataGenerator:
         }
     
     @staticmethod
-    def generate_bulk_historical_data(lat: float, lon: float, start_time: int, end_time: int) -> Dict:
+    def generate_bulk_historical_data(
+        lat: float, lon: float, start_time: int, end_time: int
+    ) -> Dict:
         """Generate historical fake data for a time range in bulk"""
         historical_list = []
         current_time = start_time
-        
-        # Generate data points every hour
         while current_time <= end_time:
-            fake_data = FakeDataGenerator.generate_fake_data(lat, lon, current_time)
+            fake_data = FakeDataGenerator.generate_fake_data(
+                lat, lon, current_time
+            )
             historical_list.extend(fake_data["list"])
-            current_time += 3600  # Add 1 hour
-        
-        logger.info(f"Generated {len(historical_list)} historical data points for location ({lat}, {lon})")
-        
-        return {
-            "coord": [lat, lon],
-            "list": historical_list
-        }
+            current_time += 3600
+        logger.info(
+            f"Generated {len(historical_list)} historical data points for location ({lat}, {lon})"
+        )
+        result = {"coord": [lat, lon], "list": historical_list}
+        result["source"] = "Synthetic Fallback"  # <-- Add source
+        return result
     
     @staticmethod
     def save_fake_data_to_file():
@@ -185,6 +186,20 @@ class FakeDataGenerator:
 
 class AQIService:
     """Service class for AQI data operations"""
+
+    def check_api_availability(self) -> str:
+        """Performs a quick check to see if the OpenWeatherMap API is available."""
+        try:
+            # Use a known location for a quick, lightweight check
+            lat, lon = 40.7128, -74.0060  # New York
+            url = f"{BASE_URL}?lat={lat}&lon={lon}&appid={API_KEY}"
+            # Use a short timeout for a quick check
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()  # Will raise an error on 4xx or 5xx
+            return "available"
+        except Exception as e:
+            logger.warning(f"API availability check failed: {e}")
+            return "unavailable"
     
     def fetch_current_aqi(self, lat: float, lon: float) -> Optional[Dict]:
         """Fetch current AQI data from API"""
@@ -192,71 +207,83 @@ class AQIService:
             url = f"{BASE_URL}?lat={lat}&lon={lon}&appid={API_KEY}"
             response = requests.get(url, timeout=10)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            data["source"] = "OpenWeatherMap API"  # <-- Add source
+            return data
         except Exception as e:
             logger.error(f"API error: {e}")
             return self._get_fallback_data(lat, lon)
-    
+
     def fetch_forecast_aqi(self, lat: float, lon: float) -> Optional[Dict]:
         """Fetch AQI forecast data from API"""
         try:
             url = f"{BASE_URL}/forecast?lat={lat}&lon={lon}&appid={API_KEY}"
             response = requests.get(url, timeout=10)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            data["source"] = "OpenWeatherMap API"  # <-- Add source
+            return data
         except Exception as e:
             logger.error(f"Forecast API error: {e}")
             return self._generate_forecast_fallback(lat, lon)
-    
-    def fetch_historical_aqi(self, lat: float, lon: float, start: int, end: int) -> Optional[Dict]:
+
+    def fetch_historical_aqi(
+        self, lat: float, lon: float, start: int, end: int
+    ) -> Optional[Dict]:
         """Fetch historical AQI data from API with immediate fallback to bulk generation"""
         try:
             url = f"{BASE_URL}/history?lat={lat}&lon={lon}&start={start}&end={end}&appid={API_KEY}"
             response = requests.get(url, timeout=10)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            data["source"] = "OpenWeatherMap API"  # <-- Add source
+            return data
         except Exception as e:
             logger.error(f"Historical API error: {e}")
-            # Immediately generate all fake data in one go
-            logger.info(f"API failed, generating bulk historical data for ({lat}, {lon})")
-            return FakeDataGenerator.generate_bulk_historical_data(lat, lon, start, end)
-    
+            logger.info(
+                f"API failed, generating bulk historical data for ({lat}, {lon})"
+            )
+            return FakeDataGenerator.generate_bulk_historical_data(
+                lat, lon, start, end
+            )
+
     def _get_fallback_data(self, lat: float, lon: float) -> Dict:
         """Get fallback data from file or generate new"""
         try:
-            # Try to find location name
             location_name = self._get_location_name(lat, lon)
-            
             if os.path.exists(FAKE_DATA_FILE):
-                with open(FAKE_DATA_FILE, 'r') as f:
+                with open(FAKE_DATA_FILE, "r") as f:
                     fake_data = json.load(f)
-                    # Find closest match by location
                     for item in fake_data:
-                        if abs(item["coord"][0] - lat) < 1 and abs(item["coord"][1] - lon) < 1:
+                        if (
+                            abs(item["coord"][0] - lat) < 1
+                            and abs(item["coord"][1] - lon) < 1
+                        ):
                             result = item.copy()
                             if location_name:
                                 result["location_name"] = location_name
+                            result["source"] = "Synthetic Fallback"  # <-- Add source
                             return result
-            
-            # Generate new fake data if no match found
             result = FakeDataGenerator.generate_fake_data(lat, lon)
             if location_name:
                 result["location_name"] = location_name
+            result["source"] = "Synthetic Fallback"  # <-- Add source
             return result
         except Exception as e:
             logger.error(f"Fallback data error: {e}")
-            return FakeDataGenerator.generate_fake_data(lat, lon)
-    
+            result = FakeDataGenerator.generate_fake_data(lat, lon)
+            result["source"] = "Synthetic Fallback"  # <-- Add source
+            return result
+
     def _generate_forecast_fallback(self, lat: float, lon: float) -> Dict:
         """Generate fake forecast data"""
         forecast_data = {"coord": [lat, lon], "list": []}
         current_time = int(time.time())
-        
-        for hours_ahead in range(0, 96, 3):  # 4 days, every 3 hours
+        for hours_ahead in range(0, 96, 3):
             timestamp = current_time + (hours_ahead * 3600)
             fake_item = FakeDataGenerator.generate_fake_data(lat, lon, timestamp)
             forecast_data["list"].append(fake_item["list"][0])
-        
+        forecast_data["source"] = "Synthetic Fallback"  # <-- Add source
         return forecast_data
     
     def _get_location_name(self, lat: float, lon: float) -> Optional[str]:
@@ -279,21 +306,28 @@ class AQIService:
         try:
             with get_db() as conn:
                 cursor = conn.cursor()
+
+                print(f"Saving data for location: {location_name}")
                 
                 # If location_name is in the data dict, use it
                 if isinstance(data, dict) and "location_name" in data:
                     location_name = data["location_name"]
-                
+                raw_coord = data.get("coord", {})
+                if isinstance(raw_coord, dict):
+                    lat, lon = raw_coord.get("lat"), raw_coord.get("lon")
+                else:
+                    lat, lon = raw_coord[0], raw_coord[1]
+
                 saved_count = 0
                 for item in data.get("list", []):
                     cursor.execute('''
                         INSERT INTO aqi_data 
-                        (timestamp, latitude, longitude, aqi, pm2_5, pm10, co, no, no2, o3, so2, nh3, location_name)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (timestamp, latitude, longitude, aqi, pm2_5, pm10, co, no, no2, o3, so2, nh3, location_name, source)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         item["dt"],
-                        data["coord"][0],
-                        data["coord"][1],
+                        lat,
+                        lon,
                         item["main"]["aqi"],
                         item["components"].get("pm2_5"),
                         item["components"].get("pm10"),
@@ -303,7 +337,8 @@ class AQIService:
                         item["components"].get("o3"),
                         item["components"].get("so2"),
                         item["components"].get("nh3"),
-                        location_name
+                        location_name,
+                        data.get("source", "unknown")
                     ))
                     saved_count += 1
                 
@@ -368,33 +403,6 @@ def populate_initial_historical_data():
         else:
             logger.info(f"Sufficient historical data already exists for {name} ({len(existing_data)} points)")
 
-# Background data collection
-def background_data_collector():
-    """Background thread to collect AQI data periodically"""
-    service = AQIService()
-    
-    # Updated monitoring locations
-    monitoring_locations = [
-        (40.7128, -74.0060, "New York"),
-        (51.5074, -0.1278, "London"),
-        (35.6762, 139.6503, "Tokyo"),
-        (39.9042, 116.4074, "Beijing"),
-        (31.2304, 121.4737, "Shanghai")
-    ]
-    
-    while True:
-        try:
-            for lat, lon, name in monitoring_locations:
-                data = service.fetch_current_aqi(lat, lon)
-                if data:
-                    service.save_to_database(data, name)
-                time.sleep(5)  # Small delay between requests
-            
-            logger.info(f"Background collection completed. Next run in {UPDATE_INTERVAL} seconds")
-            time.sleep(UPDATE_INTERVAL)
-        except Exception as e:
-            logger.error(f"Background collector error: {e}")
-            time.sleep(60)  # Wait a minute before retrying
 
 # Flask Routes
 @app.route('/api/current', methods=['GET'])
@@ -445,58 +453,53 @@ def get_historical_aqi():
     
     lat = request.args.get('lat', type=float)
     lon = request.args.get('lon', type=float)
-    start_date = request.args.get('start')  # ISO format: YYYY-MM-DD
-    end_date = request.args.get('end')      # ISO format: YYYY-MM-DD
+    start_date = request.args.get('start')
+    end_date = request.args.get('end')
     
     if not all([lat, lon, start_date, end_date]):
         return jsonify({"error": "lat, lon, start, and end parameters required"}), 400
     
     try:
-        # Convert dates to timestamps
         start_ts = int(datetime.datetime.fromisoformat(start_date).timestamp())
         end_ts = int(datetime.datetime.fromisoformat(end_date).timestamp())
         
-        # First try to get from database
+        # First, try to get from the local database
         db_data = service.get_historical_from_db(lat, lon, start_ts, end_ts)
         
         if db_data:
-            return jsonify({"data": db_data, "source": "database"})
+            # If found in DB, wrap it in the expected format and set the source
+            return jsonify({
+                "coord": [lat, lon],
+                "list": db_data,
+                "source": "Local Database"
+            })
         
-        # If not in database, fetch from API (or generate fallback)
+        # If not in DB, fetch from API (which has its own fallback)
         api_data = service.fetch_historical_aqi(lat, lon, start_ts, end_ts)
         if api_data:
+            # The source is already in api_data, just save and return
             service.save_to_database(api_data)
-            return jsonify({"data": api_data, "source": "api"})
+            return jsonify(api_data)
         
         return jsonify({"error": "No historical data available"}), 404
         
     except Exception as e:
+        logger.error("Error in /api/historical", exc_info=True)
         return jsonify({"error": str(e)}), 400
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    service = AQIService()
+    api_status = service.check_api_availability()
+
     return jsonify({
         "status": "healthy", 
         "timestamp": int(time.time()),
         "database": DB_NAME,
-        "historical_days": HISTORICAL_DAYS
-    })
-
-@app.route('/api/info', methods=['GET'])
-def get_info():
-    """Get information about the server configuration"""
-    return jsonify({
-        "historical_data_days": HISTORICAL_DAYS,
-        "update_interval_seconds": UPDATE_INTERVAL,
+        "openweather_api_status": api_status,
+        "historical_days": HISTORICAL_DAYS,
         "data_directory": DATA_DIR,
-        "monitored_locations": [
-            {"name": "New York", "lat": 40.7128, "lon": -74.0060},
-            {"name": "London", "lat": 51.5074, "lon": -0.1278},
-            {"name": "Tokyo", "lat": 35.6762, "lon": 139.6503},
-            {"name": "Beijing", "lat": 39.9042, "lon": 116.4074},
-            {"name": "Shanghai", "lat": 31.2304, "lon": 121.4737}
-        ]
     })
 
 def initialize_app():
@@ -514,10 +517,6 @@ def initialize_app():
     
     # Populate initial historical data
     populate_initial_historical_data()
-    
-    # Start background data collector
-    collector_thread = threading.Thread(target=background_data_collector, daemon=True)
-    collector_thread.start()
     
     logger.info("Application initialized successfully")
 
