@@ -1,13 +1,13 @@
-# AQI (Air Quality Index) Flask Server
+# AQI Flask Server
 
 AQI (Air Quality Index) Flask Server using the OpenWeatherMap Air Pollution API. This server provides:
 
--   **Secure API Access**: All core data endpoints (`/api/current`, `/api/forecast`, `/api/historical`) require an `X-API-Key` header for authorization.
+- **Secure API Access**: All core data endpoints (`/api/current`, `/api/forecast`, `/api/historical`) require an `X-API-Key` header for authorization.
 - **Real-time AQI Data**: Get current air quality index and pollutant concentrations
 - **Historical Data Storage**: Automatically stores AQI data in SQLite database with 15-minute intervals
 - **Forecast Data**: 4-day air quality forecasts
 - **Pollutant Monitoring**: Tracks PM2.5, PM10, CO, NO2, SO2, O3, and more
-- **Background Collection**: Automatic data collection for major cities
+- **Background Collection**: Automatic data collection for major cities: Beijing, Shanghai, Tokyo, London and New York.
 
 > [!WARNING]  
 > If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic synthetic data**.
@@ -96,8 +96,8 @@ GET /api/historical
 Parameters:
 - `lat` (float): Latitude
 - `lon` (float): Longitude
-- `start` (string): Start data (ISO format: YYYY-MM-DD)
-- `end` (string): End data (ISO format: YYYY-MM-DD)
+- `start` (string): Start data (ISO format: `YYYY-MM-DD`)
+- `end` (string): End data (ISO format: `YYYY-MM-DD`)
 
 Example:
 ```bash
