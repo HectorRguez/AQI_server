@@ -8,12 +8,12 @@ AQI (Air Quality Index) Flask Server using the OpenWeatherMap Air Pollution API.
 - **Forecast Data**: 4-day air quality forecasts
 - **Pollutant Monitoring**: Tracks PM2.5, PM10, CO, NO2, SO2, O3, and more
 
-> [!WARNING]  
+> [!WARNING]
 > If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic synthetic data**.
 
 > [!IMPORTANT]  
 > This server is currently deployed and accessible here: **[https://aqi-server-pymz.onrender.com/](https://aqi-server-pymz.onrender.com/)**
-> To use the protected API endpoints (e.g., `/api/current`, `/api/forecast`, `/api/historical`) on the live deployment, you will need the > >  `X-API-Key`. Please contact me to request access to the key!
+> To use the API endpoints on the live deployment, you will need the `X-API-Key`. Please contact me to request access to the key!
 
 ## Installation
 
@@ -110,7 +110,7 @@ GET /api/health
 
 Example
 ```bash
-curl "http://localhost:5000/api/health"
+curl -H "X-API-Key: hackathon-secret-key" "http://localhost:5000/api/health"
 ```
 
 ## Response format

@@ -488,6 +488,7 @@ def get_historical_aqi():
         return jsonify({"error": str(e)}), 400
 
 @app.route('/api/health', methods=['GET'])
+@require_api_key
 def health_check():
     """Health check endpoint"""
     service = AQIService()
