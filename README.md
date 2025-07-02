@@ -167,3 +167,11 @@ __AQI Forecast:__
 __Historical AQI Data:__
 
 <img src="figures/historical_beijing.png" alt="historical" width="500"/>
+
+
+> [!NOTE]  
+This server is currently deployed and accessible here:
+
+**[https://aqi-server-pymz.onrender.com/](https://aqi-server-pymz.onrender.com/)**
+
+To use the protected API endpoints (e.g., `/api/current`, `/api/forecast`, `/api/historical`) on the live deployment, you will need the `X-API-Key`. Please contact me to request access to the key!
