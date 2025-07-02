@@ -1,6 +1,6 @@
 # AQI (Air Quality Index) Flask Server
 
-AQI (Air Quality Index) Flask Server using the OpenWeatherMap AIr Pollution API. This server provides:
+AQI (Air Quality Index) Flask Server using the OpenWeatherMap Air Pollution API. This server provides:
 
 -   **Secure API Access**: All core data endpoints (`/api/current`, `/api/forecast`, `/api/historical`) require an `X-API-Key` header for authorization.
 - **Real-time AQI Data**: Get current air quality index and pollutant concentrations
@@ -11,6 +11,10 @@ AQI (Air Quality Index) Flask Server using the OpenWeatherMap AIr Pollution API.
 
 > [!WARNING]  
 > If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic synthetic data**.
+
+> [!IMPORTANT]  
+> This server is currently deployed and accessible here: **[https://aqi-server-pymz.onrender.com/](https://aqi-server-pymz.onrender.com/)**
+> To use the protected API endpoints (e.g., `/api/current`, `/api/forecast`, `/api/historical`) on the live deployment, you will need the > >  `X-API-Key`. Please contact me to request access to the key!
 
 ## Installation
 
@@ -167,11 +171,3 @@ __AQI Forecast:__
 __Historical AQI Data:__
 
 <img src="figures/historical_beijing.png" alt="historical" width="500"/>
-
-
-> [!NOTE]  
-This server is currently deployed and accessible here:
-
-**[https://aqi-server-pymz.onrender.com/](https://aqi-server-pymz.onrender.com/)**
-
-To use the protected API endpoints (e.g., `/api/current`, `/api/forecast`, `/api/historical`) on the live deployment, you will need the `X-API-Key`. Please contact me to request access to the key!
