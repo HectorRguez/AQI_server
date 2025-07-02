@@ -2,6 +2,7 @@
 
 AQI (Air Quality Index) Flask Server using the OpenWeatherMap AIr Pollution API. This server provides:
 
+-   **Secure API Access**: All core data endpoints (`/api/current`, `/api/forecast`, `/api/historical`) require an `X-API-Key` header for authorization.
 - **Real-time AQI Data**: Get current air quality index and pollutant concentrations
 - **Historical Data Storage**: Automatically stores AQI data in SQLite database with 15-minute intervals
 - **Forecast Data**: 4-day air quality forecasts
@@ -31,18 +32,20 @@ pip install -r requirements.txt
 
 4. Set up environment variables (create _.env_ file):
 ```bash
-cd src
 echo "OPENWEATHER_API_KEY=your_api_key_here" > .env
+echo "API_SECRET_KEY=hackathon-secret-key" >> .env
 ```
 
-5. The API key is obtained from [OpenWeather)](https://openweathermap.org/api). [^1]
+## API Keys
+-   `OPENWEATHER_API_KEY`: Obtained from [OpenWeather](https://openweathermap.org/api).[^1] This key is used by the server to fetch real-time data.
+-   `API_SECRET_KEY`: This is a secret key of your own choosing, used to protect your server's API endpoints.
 
 [^1]: It takes a few hours to get the free API key activated, feel free to contact me if you need assistance when setting it up `:)`.
 
 ## Usage
 
 ```bash
-python app.py
+python src/app.py
 ```
 
 The server will:
@@ -64,7 +67,7 @@ Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5000/api/current?lat=40.7128&lon=-74.0060"
+curl -H "X-API-Key: hackathon-secret-key" "http://localhost:5000/api/current?lat=40.7128&lon=-74.0060"
 ```
 
 2. Forecast AQI Data
@@ -78,7 +81,7 @@ Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5000/api/forecast?lat=51.5074&lon=-0.1278"
+curl -H "X-API-Key: hackathon-secret-key" "http://localhost:5000/api/forecast?lat=51.5074&lon=-0.1278"
 ```
 
 3. Historical AQI Data
@@ -94,7 +97,7 @@ Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5000/api/historical?lat=48.8566&lon=2.3522&start=2025-06-25&end=2025-07-02"
+curl -H "X-API-Key: hackathon-secret-key" "http://localhost:5000/api/historical?lat=48.8566&lon=2.3522&start=2025-06-25&end=2025-07-02"
 ```
 
 4. Health Check
@@ -141,7 +144,7 @@ All endpoints return JSON data with the following structure:
 To run the tests:
 
 ```bash
-python test_client.py
+python src/test_client.py
 ```
 
 This will:

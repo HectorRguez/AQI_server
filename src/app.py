@@ -10,7 +10,12 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from contextlib import contextmanager
 from typing import Dict, List, Optional, Tuple
+from functools import wraps
 import logging
+
+# Load environment
+from dotenv import load_dotenv
+load_dotenv() 
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -19,12 +24,24 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-# Configuration
+# Configuration and API key safety
 API_KEY = os.environ.get('OPENWEATHER_API_KEY', 'your_api_key_here')
+API_SECRET_KEY = os.environ.get('API_SECRET_KEY')
 BASE_URL = "http://api.openweathermap.org/data/2.5/air_pollution"
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if the API key is present and correct
+        if request.headers.get('X-API-Key') and request.headers.get('X-API-Key') == API_SECRET_KEY:
+            return f(*args, **kwargs)
+        else:
+            # If key is missing or incorrect, return an error
+            return jsonify({"error": "API key is missing or invalid"}), 401
+    return decorated_function
+
 
 # Updated paths for data directory
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)  # Create data directory if it doesn't exist
 
 DB_NAME = os.path.join(DATA_DIR, "aqi_data.db")
@@ -381,6 +398,7 @@ def background_data_collector():
 
 # Flask Routes
 @app.route('/api/current', methods=['GET'])
+@require_api_key
 def get_current_aqi():
     """Get current AQI data"""
     service = AQIService()
@@ -402,6 +420,7 @@ def get_current_aqi():
     return jsonify({"error": "Failed to fetch AQI data"}), 500
 
 @app.route('/api/forecast', methods=['GET'])
+@require_api_key
 def get_forecast_aqi():
     """Get AQI forecast data"""
     service = AQIService()
@@ -419,6 +438,7 @@ def get_forecast_aqi():
     return jsonify({"error": "Failed to fetch forecast data"}), 500
 
 @app.route('/api/historical', methods=['GET'])
+@require_api_key
 def get_historical_aqi():
     """Get historical AQI data"""
     service = AQIService()
@@ -501,6 +521,9 @@ def initialize_app():
     
     logger.info("Application initialized successfully")
 
+# Initialize the application when the module is imported
+initialize_app()
+
+# This block is now only for running in development mode directly
 if __name__ == '__main__':
-    initialize_app()
     app.run(debug=True, host='0.0.0.0', port=5000)
