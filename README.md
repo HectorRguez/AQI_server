@@ -1,13 +1,15 @@
 # AQI (Air Quality Index) Flask Server
 
-The server uses the OpenWeatherMap Air Pollution API and includes fallback mechanisms.
+AQI (Air Quality Index) Flask Server using the OpenWeatherMap AIr Pollution API. This server provides:
 
 - **Real-time AQI Data**: Get current air quality index and pollutant concentrations
 - **Historical Data Storage**: Automatically stores AQI data in SQLite database with 15-minute intervals
 - **Forecast Data**: 4-day air quality forecasts
 - **Pollutant Monitoring**: Tracks PM2.5, PM10, CO, NO2, SO2, O3, and more
-- **Fallback System**: Generates realistic fake data when API is unavailable
 - **Background Collection**: Automatic data collection for major cities
+
+[!IMPORTANT]
+If the OpenWeatherMap API is unavailable, the server **automatically generates and serves realistic fake data**.
 
 ## Installation
 
